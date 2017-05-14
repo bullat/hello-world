@@ -1,2 +1,5 @@
 # hello-world
-Test rep
+
+Hi everybody!
+
+This is just a test and junk repository.
