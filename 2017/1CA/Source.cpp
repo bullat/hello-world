@@ -66,11 +66,8 @@ int main()
 			double _s = sq( cake.R ) + 2*cake.R*cake.H;
 			_ASSERTE( cakes2.size() >= K-1 );
 			multiset_PC::const_iterator b2 = cakes2.cbegin();
-			for ( int j = 0; j < K - 1; ++j )
-			{
+			for ( int j = 0; j < K - 1; ++j, ++b2 )
 				_s += 2 * b2->R * b2->H;
-				++b2;
-			}
 			if ( _s > S )
 				S = _s;
 		}
