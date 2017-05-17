@@ -1,79 +1,78 @@
 #include <iostream>
 #include <iomanip>
-#include <vector>
-#include <string>
-#include <algorithm>
-#define _USE_MATH_DEFINES
-#include <math.h>
 #include <set>
+#include <tuple>
 
-using namespace std;
-double sq(double a) { return a*a;}
+const double M_PI = 3.14159265358979323846;
 
-struct PC { double R, H; };
-auto f1 = [](const PC& l, const PC& r)->bool
+struct Pancake
 {
-	if ( l.R > r.R )
-		return true;
-	else if ( l.R < r.R )
-		return false;
-	else // l.R == r.R
-		return ( l.H > r.H );
+	double R, H;
+	static bool compare_RH(const Pancake& l, const Pancake& r)
+	{
+		// for sort by raduis and then height
+		return std::tie( l.R, l.H ) > std::tie( r.R, r.H );
+	}
+	static bool compare_SideArea(const Pancake& l, const Pancake& r)
+	{
+		// for sort by side area
+		return l.R * l.H > r.R * r.H;
+	}
+	double getSideArea() const
+	{
+		return 2 * R * H;
+	}
+	double getBottomArea() const
+	{
+		return R * R;
+	}
 };
-auto f2 = []( const PC& l, const PC& r )->bool
-{
-	const double _l = l.R * l.H;
-	const double _r = r.R * r.H;
-	return _l > _r;
-};
-
-typedef multiset<PC,bool(*)(const PC&, const PC&)> multiset_PC;
+typedef std::multiset<Pancake,bool(*)(const Pancake&, const Pancake&)> multiset_PC;
 
 
 int main()
 {
+	std::cout << std::setprecision( 6 ) << std::fixed;
 	int Ntests;
-	cin >> Ntests;
+	std::cin >> Ntests;
 
 	for ( int Ntest = 0; Ntest < Ntests; ++Ntest )
 	{
 		int N, K;
-		cin >> N >> K; // total num and ordered num
-		multiset_PC cakes( f1 ); // sorted by raduis and then height
+		std::cin >> N >> K; // total num and ordered num of pancakes
+		multiset_PC cakes_RH( Pancake::compare_RH );
 		for (int i=0; i<N; ++i )
 		{
-			PC tmp;
-			cin >> tmp.R >> tmp.H;
-			cakes.insert( tmp );
+			Pancake tmp;
+			std::cin >> tmp.R >> tmp.H;
+			cakes_RH.insert( tmp );
 		}
-		multiset_PC cakes2( cakes.cbegin(), cakes.cend(), f2 ); // sorted by side area
+		multiset_PC cakes_SideArea( cakes_RH.cbegin(), cakes_RH.cend(), Pancake::compare_SideArea );
 
-		double S = -10000000;
-		multiset_PC::const_iterator b = cakes.cbegin();
-		for ( int i = 0, i_end = N - K; i <= i_end; ++i, ++b )
+		auto it_remove = cakes_RH.cend();
+		_ASSERTE( cakes_RH.size() >= K-1 );
+		std::advance( it_remove, 1-K ); // remove last K-1 elems
+		cakes_RH.erase( it_remove, cakes_RH.cend() );
+
+		double S = -DBL_MAX;
+		for ( auto it = cakes_RH.cbegin(), it_end = cakes_RH.cend(); it != it_end; ++it )
 		{
-			_ASSERTE( b != cakes.cend() );
-			const PC& cake = *b;
-			cakes2.erase( cakes2.find( cake ) );
-			if ( b != cakes.cbegin() )
-			{
-				multiset_PC::const_iterator prev = b;
-				--prev;
-				if ( cake.R == prev->R )
+			const Pancake& cake = *it;
+			cakes_SideArea.erase( cakes_SideArea.find( cake ) );
+			if ( it != cakes_RH.cbegin() && cake.R == std::prev(it)->R )
 					continue;
-			}
 
-			double _s = sq( cake.R ) + 2*cake.R*cake.H;
-			_ASSERTE( cakes2.size() >= K-1 );
-			multiset_PC::const_iterator b2 = cakes2.cbegin();
-			for ( int j = 0; j < K - 1; ++j, ++b2 )
-				_s += 2 * b2->R * b2->H;
+			double _s = cake.getBottomArea() + cake.getSideArea();
+			_ASSERTE( cakes_SideArea.size() >= K-1 );
+			auto it2_end = cakes_SideArea.cbegin();
+			std::advance( it2_end, K-1 ); // create range for 'first K-1 elems'
+			for ( auto it2 = cakes_SideArea.cbegin(); it2 != it2_end; ++it2 )
+				_s += it2->getSideArea();
 			if ( _s > S )
 				S = _s;
 		}
-		S *= M_PI;
 
-		cout << setprecision( 6 ) << fixed << "Case #" << Ntest+1 << ": " << S << endl;
+		std::cout << "Case #" << Ntest+1 << ": " << S * M_PI << std::endl;
 	}
 
 	return 0;
